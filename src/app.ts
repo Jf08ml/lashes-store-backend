@@ -38,7 +38,22 @@ app.use("/api/images", imagesRoutes);
 app.use("/api/financial", financialRoutes); // Análisis financiero
 
 app.get("/", (_req: Request, res: Response) => {
-  res.send("API galaxia store funcionando");
+  res.json({ 
+    message: "API Galaxia Store funcionando", 
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Health check endpoint para Vercel
+app.get("/api/health", (_req: Request, res: Response) => {
+  res.json({ 
+    status: "healthy", 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    mongodb: "connected" // Aquí podrías agregar verificación real de MongoDB
+  });
 });
 
 // Error handler unificado
