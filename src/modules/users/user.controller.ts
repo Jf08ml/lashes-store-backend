@@ -51,6 +51,12 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
     const { email, password } = req.body as { email: string; password: string };
 
     const standardRole = await RoleService.getRoles({ name: "Standard" });
+    
+    if (!standardRole || standardRole.length === 0) {
+      console.error("No Standard role found in database");
+      return sendResponse(res, 500, null, "Error de configuración: rol Standard no encontrado");
+    }
+
     const userData = {
       email,
       password,
@@ -65,6 +71,7 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
 
     sendResponse(res, 201, data, "User created successfully");
   } catch (error) {
+    console.error("Signup error:", error);
     if (error instanceof DuplicateKeyError) {
       return sendResponse(res, 409, null, error.message);
     }
@@ -75,8 +82,18 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     const { email, password } = req.body as { email: string; password: string };
-
+    
     const user = await UserService.getUser({ email });
+    
+    if (!user.passwordHash) {
+      return sendResponse(
+        res,
+        500,
+        null,
+        "Error interno: usuario sin contraseña configurada."
+      );
+    }
+    
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return sendResponse(
@@ -93,6 +110,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
 
     sendResponse(res, 201, data, "The user has logged in successfully.");
   } catch (error) {
+    console.error("Login error:", error);
     if (error instanceof NotFoundError) {
       return sendResponse(res, 404, null, error.message);
     }

@@ -15,5 +15,6 @@ router.get("/:id", orderController.getOrder);
 // management
 router.patch("/:id/status", orderController.updateOrderStatus);
 router.patch("/:id/cancel", orderController.cancelOrder);
+router.patch("/:id/return", orderController.processReturn);
 
 export default router;

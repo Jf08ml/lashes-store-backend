@@ -36,6 +36,10 @@ UserSchema.virtual("password")
 
 // método de comparación
 UserSchema.methods.comparePassword = function (candidate: string) {
+  if (!this.passwordHash) {
+    console.error("comparePassword called but passwordHash is undefined");
+    throw new Error("Usuario sin contraseña configurada");
+  }
   return bcrypt.compare(candidate, this.passwordHash);
 };
 

@@ -6,8 +6,10 @@ import authRoutes from "./routes/auth.routes";
 import productRoutes from "./routes/product.routes";
 import categoryRoutes from "./routes/category.routes";
 import orderRoutes from "./routes/order.routes";
+import onlineOrderRoutes from "./routes/online-order.routes";
 import customerRoutes from "./routes/customer.routes";
 import imagesRoutes from "./routes/image.routes";
+import financialRoutes from "./routes/financial.routes";
 
 const app = express();
 
@@ -29,9 +31,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api/product", productRoutes);
 app.use("/api", categoryRoutes);
-app.use("/api/orders", orderRoutes);
+app.use("/api/orders", orderRoutes); // Órdenes POS
+app.use("/api/online-orders", onlineOrderRoutes); // Pedidos online
 app.use("/api/customers", customerRoutes);
 app.use("/api/images", imagesRoutes);
+app.use("/api/financial", financialRoutes); // Análisis financiero
 
 app.get("/", (_req: Request, res: Response) => {
   res.send("API galaxia store funcionando");

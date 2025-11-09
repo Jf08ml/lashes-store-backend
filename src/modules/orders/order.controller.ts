@@ -231,6 +231,30 @@ class OrderController {
       });
     }
   }
+
+  async processReturn(req: Request, res: Response) {
+    try {
+      const { id } = req.params as { id: string };
+      const returnData = req.body;
+      const processedBy = (req as any).user?.id as string | undefined;
+      
+      const order = await orderService.processReturn(id, returnData, processedBy);
+      
+      response(res, {
+        status: 200,
+        success: true,
+        message: "Devolución procesada exitosamente. Stock restaurado.",
+        data: order,
+      });
+    } catch (error: any) {
+      console.error("Error in processReturn:", error);
+      response(res, {
+        status: error?.statusCode || 500,
+        success: false,
+        message: error?.message || "Error interno del servidor.",
+      });
+    }
+  }
 }
 
 export default new OrderController();

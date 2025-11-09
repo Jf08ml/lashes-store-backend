@@ -2,6 +2,7 @@ import OrderModel from "./order.model";
 import ProductModel from "../products/product.model";
 import customerService from "../customers/customer.service";
 import CustomErrors from "../../errors/CustomErrors";
+import { Types } from "mongoose";
 
 const { DatabaseError, NotFoundError, ValidationError } = CustomErrors;
 
@@ -37,7 +38,7 @@ class OrderService {
               transformed.total
             );
           } catch (e: any) {
-            console.warn("Could not update customer stats:", e?.message || e);
+            // Continue if customer stats update fails
           }
         }
 
@@ -120,7 +121,7 @@ class OrderService {
           };
         }
       } catch (e: any) {
-        console.warn("Could not create/update customer:", e?.message || e);
+        // Continue if customer creation fails
       }
     }
 
@@ -546,6 +547,85 @@ class OrderService {
       console.error("Error in getTodaysOrders:", e);
       throw new DatabaseError("Error al obtener órdenes de hoy.");
     }
+  }
+
+  // ====== RETURNS ======
+  async processReturn(orderId: string, returnData: any, processedBy?: string) {
+    const session = await OrderModel.startSession();
+    try {
+      return await session.withTransaction(async () => {
+        const order = await OrderModel.findById(orderId).session(session);
+        if (!order) {
+          throw new NotFoundError("Orden no encontrada.");
+        }
+
+        // Validar que la orden pueda ser devuelta
+        if (!["delivered"].includes(order.status)) {
+          throw new ValidationError("Solo se pueden devolver órdenes entregadas.");
+        }
+
+        // Restaurar stock si es necesario
+        if (returnData.restoreStock !== false) {
+          await this.restoreStockFromOrder(order.items, session);
+        }
+
+        // Validar y convertir processedBy a ObjectId válido o null
+        const validProcessedBy = this.validateObjectId(processedBy);
+
+        // Actualizar orden con información de devolución
+        const updateData: any = {
+          status: "returned",
+          updatedBy: validProcessedBy,
+          returnInfo: {
+            reason: returnData.reason,
+            notes: returnData.notes || "",
+            refundRequested: returnData.refundRequested || false,
+            refundProcessed: false,
+            refundAmount: returnData.refundRequested ? order.total : 0,
+            exchangeProductId: returnData.exchangeProductId || null,
+            processedBy: validProcessedBy,
+            processedAt: new Date()
+          }
+        };
+
+        const updatedOrder = await OrderModel.findByIdAndUpdate(
+          orderId,
+          updateData,
+          { new: true, session }
+        ).populate("items.product");
+
+        return updatedOrder;
+      });
+    } catch (e: any) {
+      console.error("Error in processReturn:", e);
+      if (e instanceof ValidationError || e instanceof NotFoundError) throw e;
+      throw new DatabaseError("Error al procesar la devolución.");
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  // Restaurar stock de productos
+  private async restoreStockFromOrder(items: any[], session: any) {
+    for (const item of items) {
+      try {
+        await ProductModel.findByIdAndUpdate(
+          item.product,
+          { $inc: { stock: item.quantity } },
+          { session }
+        );
+      } catch (e) {
+        // Silently ignore restore errors
+      }
+    }
+  }
+
+  // Helper para validar ObjectId
+  private validateObjectId(id?: string): Types.ObjectId | null {
+    if (!id || id === 'admin' || !Types.ObjectId.isValid(id)) {
+      return null;
+    }
+    return new Types.ObjectId(id);
   }
 }
 

@@ -24,10 +24,11 @@ class UserService {
       const doc = new UserModel({
         email,
         role: data.role,
+        nickname: data.nickname,
       } as Partial<IUser>);
+      
       // dispara el virtual "password" (hash)
-      // @ts-ignore
-      doc.password = data.password;
+      (doc as any).password = data.password;
 
       const saved = await doc.save();
 
@@ -38,8 +39,24 @@ class UserService {
 
       return populated!;
     } catch (error: any) {
-      // opcional: new DatabaseError("...", { cause: error })
-      throw new DatabaseError("Error al crear el usuario.");
+      console.error("Error in createUser:", error);
+      console.error("Error stack:", error.stack);
+      
+      if (error instanceof DuplicateKeyError) {
+        throw error;
+      }
+      
+      // Si es un error de validación de Mongoose, devolver mensaje más específico
+      if (error.name === 'ValidationError') {
+        const validationErrors = Object.values(error.errors).map((err: any) => err.message);
+        throw new DatabaseError(`Error de validación: ${validationErrors.join(', ')}`);
+      }
+      
+      if (error.code === 11000) {
+        throw new DuplicateKeyError("El email ya está registrado.");
+      }
+      
+      throw new DatabaseError(`Error al crear el usuario: ${error.message}`);
     }
   }
 

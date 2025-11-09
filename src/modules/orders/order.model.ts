@@ -7,6 +7,7 @@ export type OrderStatus =
   | "shipped"
   | "delivered"
   | "cancelled"
+  | "returned"
   | "refunded";
 export type OrderType = "pos" | "online" | "phone" | "wholesale";
 export type DeliveryType = "pickup" | "delivery" | "shipping";
@@ -83,6 +84,18 @@ export interface IOrder extends Document {
 
   createdBy?: Types.ObjectId;
   updatedBy?: Types.ObjectId;
+
+  // Return fields
+  returnInfo?: {
+    reason: string;
+    notes?: string;
+    refundRequested: boolean;
+    refundProcessed: boolean;
+    refundAmount?: number;
+    exchangeProductId?: Types.ObjectId;
+    processedBy?: Types.ObjectId;
+    processedAt?: Date;
+  };
 
   createdAt: Date;
   updatedAt: Date;
@@ -180,6 +193,7 @@ const OrderSchema = new Schema<IOrder>(
         "shipped",
         "delivered",
         "cancelled",
+        "returned",
         "refunded",
       ],
       default: "pending",
@@ -219,6 +233,18 @@ const OrderSchema = new Schema<IOrder>(
 
     createdBy: { type: Schema.Types.ObjectId, ref: "User" },
     updatedBy: { type: Schema.Types.ObjectId, ref: "User" },
+
+    // Return information
+    returnInfo: {
+      reason: { type: String },
+      notes: { type: String, maxlength: 500 },
+      refundRequested: { type: Boolean, default: false },
+      refundProcessed: { type: Boolean, default: false },
+      refundAmount: { type: Number, min: 0 },
+      exchangeProductId: { type: Schema.Types.ObjectId, ref: "Product" },
+      processedBy: { type: Schema.Types.ObjectId, ref: "User" },
+      processedAt: { type: Date }
+    },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
@@ -236,7 +262,7 @@ OrderSchema.virtual("isPaid").get(function (this: IOrder) {
   return this.paymentStatus === "paid" || this.paidAmount >= this.total;
 });
 OrderSchema.virtual("isCompleted").get(function (this: IOrder) {
-  return ["delivered", "cancelled", "refunded"].includes(this.status);
+  return ["delivered", "cancelled", "returned", "refunded"].includes(this.status);
 });
 OrderSchema.virtual("itemCount").get(function (this: IOrder) {
   return (this.items || []).reduce((sum, it) => sum + it.quantity, 0);

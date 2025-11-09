@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "setup:admin": "tsx scripts/setup-admin.ts",
+    "check:db": "tsx scripts/check-database.ts"
   },
   "keywords": [],
   "author": "",
@@ -30,7 +32,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
     "@types/multer": "^2.0.0",
-    "@types/node": "^24.9.2",
+    "@types/node": "^24.10.0",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
