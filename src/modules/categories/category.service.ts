@@ -245,7 +245,7 @@ class CategoryService {
     try {
       const category = await CategoryModel.findById(categoryId);
       if (!category) NotFoundError.throw("Categoría no encontrada.");
-      return category!.getHierarchy();
+      return (category! as any).getHierarchy();
     } catch {
       DatabaseError.throw("Error al obtener la jerarquía de la categoría.");
     }
@@ -319,7 +319,7 @@ class CategoryService {
 
   async getRootCategories() {
     try {
-      return CategoryModel.getRootCategories();
+      return (CategoryModel as any).getRootCategories();
     } catch {
       DatabaseError.throw("Error al obtener categorías raíz.");
     }

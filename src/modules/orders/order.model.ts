@@ -123,7 +123,7 @@ export interface IOrderModel extends Model<IOrder> {
   getTodaysSales(): Promise<IOrder[]>;
 }
 
-const OrderItemSchema = new Schema<IOrderItem>(
+const OrderItemSchema = new Schema(
   {
     product: { type: Schema.Types.ObjectId, ref: "Product", required: true },
     name: { type: String, required: true },
@@ -147,7 +147,7 @@ const OrderItemSchema = new Schema<IOrderItem>(
   { _id: false }
 );
 
-const CustomerSnapshotSchema = new Schema<ICustomerSnapshot>(
+const CustomerSnapshotSchema = new Schema(
   {
     customerId: { type: Schema.Types.ObjectId, ref: "Customer" },
     name: { type: String, required: true, trim: true },
@@ -167,87 +167,47 @@ const CustomerSnapshotSchema = new Schema<ICustomerSnapshot>(
   { _id: false }
 );
 
-const OrderSchema = new Schema<IOrder>(
-  {
-    _id: { type: Schema.Types.ObjectId, default: () => new Types.ObjectId() },
+// Esquema básico sin referencias complejas
+const OrderSchema = new Schema({
+  _id: { type: Schema.Types.ObjectId, default: () => new Types.ObjectId() },
+  orderNumber: { type: String, required: true },
+  subtotal: { type: Number, required: true, min: 0 },
+  tax: { type: Number, default: 0, min: 0 },
+  discount: { type: Number, default: 0, min: 0 },
+  shipping: { type: Number, default: 0, min: 0 },
+  total: { type: Number, required: true, min: 0 },
+  status: { type: String, default: "pending" },
+  orderType: { type: String, default: "pos" },
+  deliveryType: { type: String, default: "pickup" },
+  deliveryDate: { type: Date },
+  paymentMethod: { type: String, default: "cash" },
+  paymentStatus: { type: String, default: "pending" },
+  paidAmount: { type: Number, default: 0, min: 0 },
+  notes: { type: String, default: "", maxlength: 500 },
+  internalNotes: { type: String, default: "", maxlength: 500 },
+  createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+  updatedBy: { type: Schema.Types.ObjectId, ref: "User" }
+}, { timestamps: true });
 
-    orderNumber: {
-      type: String,
-      required: true,
-    },
-    customer: { type: CustomerSnapshotSchema, required: true },
-    items: [OrderItemSchema],
+// Agregar campos complejos después
+OrderSchema.add({
+  customer: { type: CustomerSnapshotSchema, required: true },
+  items: [OrderItemSchema]
+});
 
-    subtotal: { type: Number, required: true, min: 0 },
-    tax: { type: Number, default: 0, min: 0 },
-    discount: { type: Number, default: 0, min: 0 },
-    shipping: { type: Number, default: 0, min: 0 },
-    total: { type: Number, required: true, min: 0 },
-
-    status: {
-      type: String,
-      enum: [
-        "pending",
-        "confirmed",
-        "preparing",
-        "shipped",
-        "delivered",
-        "cancelled",
-        "returned",
-        "refunded",
-      ],
-      default: "pending",
-    },
-
-    orderType: {
-      type: String,
-      enum: ["pos", "online", "phone", "wholesale"],
-      default: "pos",
-    },
-
-    deliveryType: {
-      type: String,
-      enum: ["pickup", "delivery", "shipping"],
-      default: "pickup",
-    },
-    deliveryAddress: {
-      type: CustomerSnapshotSchema.obj.address,
-      required: false,
-    },
-    deliveryDate: { type: Date },
-
-    paymentMethod: {
-      type: String,
-      enum: ["cash", "card", "transfer", "check", "credit"],
-      default: "cash",
-    },
-    paymentStatus: {
-      type: String,
-      enum: ["pending", "paid", "partial", "refunded"],
-      default: "pending",
-    },
-    paidAmount: { type: Number, default: 0, min: 0 },
-
-    notes: { type: String, default: "", maxlength: 500 },
-    internalNotes: { type: String, default: "", maxlength: 500 },
-
-    createdBy: { type: Schema.Types.ObjectId, ref: "User" },
-    updatedBy: { type: Schema.Types.ObjectId, ref: "User" },
-
-    // Return information
-    returnInfo: {
-      reason: { type: String },
-      notes: { type: String, maxlength: 500 },
-      refundRequested: { type: Boolean, default: false },
-      refundProcessed: { type: Boolean, default: false },
-      refundAmount: { type: Number, min: 0 },
-      exchangeProductId: { type: Schema.Types.ObjectId, ref: "Product" },
-      processedBy: { type: Schema.Types.ObjectId, ref: "User" },
-      processedAt: { type: Date }
-    },
-  },
-  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
-);
+// Agregar returnInfo después para evitar problemas de tipos complejos
+OrderSchema.add({
+  returnInfo: {
+    reason: { type: String },
+    notes: { type: String, maxlength: 500 },
+    refundRequested: { type: Boolean, default: false },
+    refundProcessed: { type: Boolean, default: false },
+    refundAmount: { type: Number, min: 0 },
+    exchangeProductId: { type: Schema.Types.ObjectId, ref: "Product" },
+    processedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    processedAt: { type: Date }
+  }
+});
 
 // Indexes
 OrderSchema.index({ orderNumber: 1 }, { unique: true });
@@ -278,7 +238,7 @@ OrderSchema.pre("save", function (next) {
     const ts = Date.now().toString().slice(-6);
     this.orderNumber = `ORD-${YY}${MM}${DD}-${ts}`;
   }
-  this.subtotal = (this.items || []).reduce((s, i) => s + i.totalPrice, 0);
+  this.subtotal = ((this as any).items || []).reduce((s: number, i: any) => s + i.totalPrice, 0);
   this.total =
     this.subtotal +
     (this.tax || 0) +
@@ -364,5 +324,5 @@ OrderSchema.statics.getTodaysSales = function () {
   });
 };
 
-export const OrderModel = model<IOrder, IOrderModel>("Order", OrderSchema);
+export const OrderModel = model("Order", OrderSchema);
 export default OrderModel;

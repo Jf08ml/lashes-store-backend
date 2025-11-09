@@ -123,7 +123,7 @@ class ProductService {
       const product = await ProductModel.findById(productId);
       if (!product) NotFoundError.throw("Producto no encontrado.");
 
-      const updated = await product!.updateStock(quantity, operation);
+      const updated = await (product! as any).updateStock(quantity, operation);
       return ProductModel.findById(updated._id).populate("category");
     } catch {
       DatabaseError.throw("Error al actualizar el stock.");
@@ -205,7 +205,7 @@ class ProductService {
 
   async getLowStockProducts() {
     try {
-      return await ProductModel.findLowStock();
+      return await (ProductModel as any).findLowStock();
     } catch {
       DatabaseError.throw("Error al obtener productos con stock bajo.");
     }
@@ -213,7 +213,7 @@ class ProductService {
 
   async getProductsByCategory(categoryId: string) {
     try {
-      return ProductModel.findByCategory(categoryId);
+      return (ProductModel as any).findByCategory(categoryId);
     } catch {
       DatabaseError.throw("Error al obtener productos por categoría.");
     }

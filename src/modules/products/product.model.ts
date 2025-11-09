@@ -70,7 +70,7 @@ export interface IProductModel extends Model<IProduct> {
   findActiveProducts(): Promise<IProduct[]>;
 }
 
-const ProductSchema = new Schema<IProduct>(
+const ProductSchema = new Schema(
   {
     _id: { type: Schema.Types.ObjectId, default: () => new Types.ObjectId() },
 
@@ -201,7 +201,7 @@ ProductSchema.statics.findActiveProducts = function () {
   );
 };
 
-export const ProductModel = model<IProduct, IProductModel>(
+export const ProductModel = model(
   "Product",
   ProductSchema
 );

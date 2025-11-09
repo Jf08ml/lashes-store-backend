@@ -15,7 +15,7 @@ export interface IUser extends Document {
 }
 
 // Permito que tu código anterior que hacía `user.password = newPassword` siga funcionando
-const UserSchema = new Schema<IUser>(
+const UserSchema = new Schema(
   {
     email: { type: String, required: true, unique: true, index: true },
     nickname: { type: String },
@@ -43,5 +43,11 @@ UserSchema.methods.comparePassword = function (candidate: string) {
   return bcrypt.compare(candidate, this.passwordHash);
 };
 
-export const UserModel = model<IUser>("User", UserSchema);
+export const UserModel = model("User", UserSchema);
+
+// Type assertion para que TypeScript reconozca el método
+export type UserDocument = Document & IUser & {
+  comparePassword(candidate: string): Promise<boolean>;
+};
+
 export default UserModel;

@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import sendResponse from "../../utils/response";
 import UserService from "./user.service";
 import RoleService from "../roles/role.service";
-import UserModel from "./user.model";
+import UserModel, { UserDocument } from "./user.model";
 import RoleModel from "../roles/role.model";
 import CustomErrors from "../../errors/CustomErrors";
 
@@ -94,7 +94,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
       );
     }
     
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await (user as any).comparePassword(password);
     if (!isMatch) {
       return sendResponse(
         res,
@@ -232,7 +232,7 @@ export async function updatePassword(req: AuthenticatedRequest, res: Response) {
         .json({ result: "error", message: "Unauthorized updateUser" });
     }
 
-    const isMatch = await user.comparePassword(currentPassword);
+    const isMatch = await (user as any).comparePassword(currentPassword);
     if (!isMatch) {
       return res.status(401).json({
         result: "errorpassword",

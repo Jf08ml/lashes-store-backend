@@ -84,7 +84,7 @@ export interface ICustomerModel extends Model<ICustomer> {
   searchCustomers(searchTerm: string, limit?: number): Promise<ICustomer[]>;
 }
 
-const CustomerSchema = new Schema<ICustomer>(
+const CustomerSchema = new Schema(
   {
     _id: { type: Schema.Types.ObjectId, default: () => new Types.ObjectId() },
 
@@ -193,7 +193,7 @@ CustomerSchema.virtual("primaryAddress").get(function (this: ICustomer) {
 // pre-save
 CustomerSchema.pre("save", function (next) {
   // asegurar una sola dirección primaria
-  const primaries = this.addresses.filter((a) => a.isPrimary);
+  const primaries = (this as any).addresses.filter((a: any) => a.isPrimary);
   if (primaries.length > 1) {
     this.addresses.forEach((a, i) => (a.isPrimary = i === 0));
   } else if (primaries.length === 0 && this.addresses.length > 0) {
@@ -277,7 +277,7 @@ CustomerSchema.statics.searchCustomers = function (
   }).limit(limit);
 };
 
-export const CustomerModel = model<ICustomer, ICustomerModel>(
+export const CustomerModel = model(
   "Customer",
   CustomerSchema
 );

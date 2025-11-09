@@ -39,7 +39,7 @@ export interface ICategoryModel extends Model<ICategory> {
   getRootCategories(): Promise<ICategory[]>;
 }
 
-const CategorySchema = new Schema<ICategory>(
+const CategorySchema = new Schema(
   {
     _id: { type: Schema.Types.ObjectId, default: () => new Types.ObjectId() },
     name: { type: String, required: true, trim: true, maxlength: 100 },
@@ -116,7 +116,7 @@ CategorySchema.pre("save", async function (next) {
   }
 
   if (this.isModified("parent") || this.isModified("slug")) {
-    await this.generatePath();
+    await (this as any).generatePath();
   }
   next();
 });
@@ -198,7 +198,7 @@ CategorySchema.pre("findOneAndDelete", async function () {
   }
 });
 
-export const CategoryModel = model<ICategory, ICategoryModel>(
+export const CategoryModel = model(
   "Category",
   CategorySchema
 );

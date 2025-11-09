@@ -153,7 +153,7 @@ class OnlineOrderService {
 
       // Registrar en historial de estados
       if (!order.statusHistory) {
-        order.statusHistory = [];
+        (order as any).statusHistory = [];
       }
       order.statusHistory.push({
         status: newStatus,
@@ -193,10 +193,9 @@ class OnlineOrderService {
       q = q.sort(sort);
 
       const skip = (page - 1) * limit;
-      const [items, total] = await Promise.all([
-        q.skip(skip).limit(limit).exec(),
-        OnlineOrderModel.countDocuments({ status: "pending_confirmation" }),
-      ]);
+      // Ejecutar consultas por separado para evitar problemas de tipos complejos
+      const items = await q.skip(skip).limit(limit).exec();
+      const total = await OnlineOrderModel.countDocuments({ status: "pending_confirmation" });
 
       return {
         data: items,
@@ -238,10 +237,9 @@ class OnlineOrderService {
       q = q.sort(sort);
 
       const skip = (page - 1) * limit;
-      const [items, total] = await Promise.all([
-        q.skip(skip).limit(limit).exec(),
-        OnlineOrderModel.countDocuments(filters),
-      ]);
+      // Ejecutar consultas por separado para evitar problemas de tipos complejos
+      const items = await q.skip(skip).limit(limit).exec();
+      const total = await OnlineOrderModel.countDocuments(filters);
 
       return {
         data: items,

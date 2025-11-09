@@ -201,10 +201,9 @@ class OrderController {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const [todaysOrders, todaysStats] = await Promise.all([
-        orderService.getTodaysOrders(),
-        orderService.getSalesStats(today.toISOString(), tomorrow.toISOString()),
-      ]);
+      // Ejecutar consultas por separado para evitar problemas de tipos complejos
+      const todaysOrders = await orderService.getTodaysOrders();
+      const todaysStats = await orderService.getSalesStats(today.toISOString(), tomorrow.toISOString());
 
       const pendingOrders = todaysOrders.filter(
         (o: any) => o.status === "pending"

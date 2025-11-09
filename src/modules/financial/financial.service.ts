@@ -8,22 +8,20 @@ export class FinancialService {
   // Dashboard general con métricas principales
   static async getDashboardAnalysis() {
     try {
-      // Obtener datos básicos para el dashboard
-      const [products, orders, onlineOrders, customers] = await Promise.all([
-        ProductModel.find().exec(),
-        OrderModel.find().exec(),
-        OnlineOrderModel.find().exec(),
-        CustomerModel.find().exec()
-      ]);
+      // Obtener datos básicos para el dashboard - ejecutar por separado para evitar problemas de tipos
+      const products = await ProductModel.find().exec();
+      const orders = await OrderModel.find().exec();
+      const onlineOrders = await OnlineOrderModel.find().exec();
+      const customers = await CustomerModel.find().exec();
 
       // Cálculos básicos
-      const inventoryValue = products.reduce((total, product) => 
+      const inventoryValue = (products as any[]).reduce((total: number, product: any) => 
         total + (product.quantity * product.basePrice), 0);
       
-      const totalPOSSales = orders.reduce((total, order) => total + order.total, 0);
-      const totalOnlineSales = onlineOrders
-        .filter(order => ['confirmed', 'preparing', 'shipped', 'delivered'].includes(order.status))
-        .reduce((total, order) => total + order.total, 0);
+      const totalPOSSales = (orders as any[]).reduce((total: number, order: any) => total + order.total, 0);
+      const totalOnlineSales = (onlineOrders as any[])
+        .filter((order: any) => ['confirmed', 'preparing', 'shipped', 'delivered'].includes(order.status))
+        .reduce((total: number, order: any) => total + order.total, 0);
       
       const totalRevenue = totalPOSSales + totalOnlineSales;
       const totalOrders = orders.length + onlineOrders.length;
@@ -88,7 +86,7 @@ export class FinancialService {
     try {
       const products = await ProductModel.find().populate('category').exec();
       
-      const analysis = products.map(product => {
+      const analysis = (products as any[]).map((product: any) => {
         const inventoryValue = product.quantity * product.basePrice;
         const potentialRevenue = product.quantity * product.salePrice;
         const potentialProfit = potentialRevenue - inventoryValue;
@@ -157,23 +155,22 @@ export class FinancialService {
       const lastMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
       const twoMonthsAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 2, 1);
 
-      // Órdenes del mes actual y anterior
-      const [currentMonthOrders, lastMonthOrders] = await Promise.all([
-        OrderModel.find({
-          status: 'completed',
-          createdAt: { $gte: lastMonth }
-        }).exec(),
-        OrderModel.find({
-          status: 'completed',
-          createdAt: { 
-            $gte: twoMonthsAgo,
-            $lt: lastMonth
-          }
-        }).exec()
-      ]);
+      // Órdenes del mes actual y anterior - ejecutar por separado
+      const currentMonthOrders = await OrderModel.find({
+        status: 'completed',
+        createdAt: { $gte: lastMonth }
+      }).exec();
+      
+      const lastMonthOrders = await OrderModel.find({
+        status: 'completed',
+        createdAt: { 
+          $gte: twoMonthsAgo,
+          $lt: lastMonth
+        }
+      }).exec();
 
-      const currentRevenue = currentMonthOrders.reduce((sum, order) => sum + order.total, 0);
-      const lastRevenue = lastMonthOrders.reduce((sum, order) => sum + order.total, 0);
+      const currentRevenue = (currentMonthOrders as any[]).reduce((sum: number, order: any) => sum + order.total, 0);
+      const lastRevenue = (lastMonthOrders as any[]).reduce((sum: number, order: any) => sum + order.total, 0);
       
       const monthlyGrowth = lastRevenue > 0 ? 
         ((currentRevenue - lastRevenue) / lastRevenue) * 100 : 0;
@@ -182,8 +179,8 @@ export class FinancialService {
         currentRevenue / currentMonthOrders.length : 0;
 
       // Obtener datos de productos para rotación
-      const products = await ProductModel.find().exec();
-      const totalInventoryValue = products.reduce((sum, p) => sum + (p.quantity * p.basePrice), 0);
+      const productsForInventory = await ProductModel.find().exec();
+      const totalInventoryValue = (productsForInventory as any[]).reduce((sum: number, p: any) => sum + (p.quantity * p.basePrice), 0);
       const inventoryTurnover = totalInventoryValue > 0 ? 
         (currentRevenue / totalInventoryValue) * 12 : 0; // Anualizado
 
@@ -222,7 +219,7 @@ export class FinancialService {
     try {
       const products = await ProductModel.find().populate('category').exec();
       
-      const productProfitability = products.map(product => {
+      const productProfitability = (products as any[]).map((product: any) => {
         const profit = product.salePrice - product.basePrice;
         const margin = product.salePrice > 0 ? (profit / product.salePrice) * 100 : 0;
         
@@ -267,7 +264,7 @@ export class FinancialService {
     try {
       const products = await ProductModel.find().populate('category').exec();
       
-      const inventory = products.map(product => {
+      const inventory = (products as any[]).map((product: any) => {
         const value = product.quantity * product.basePrice;
         const potentialValue = product.quantity * product.salePrice;
         

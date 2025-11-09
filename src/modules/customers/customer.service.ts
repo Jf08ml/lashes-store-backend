@@ -9,7 +9,7 @@ type Options = { page?: number; limit?: number; sort?: Record<string, 1 | -1> };
 class CustomerService {
   async findByIdentifier(identifier: string) {
     try {
-      return CustomerModel.findByIdentifier(identifier);
+      return (CustomerModel as any).findByIdentifier(identifier);
     } catch (e) {
       console.error("Error in findByIdentifier:", e);
       throw new DatabaseError("Error al buscar cliente.");
@@ -18,7 +18,7 @@ class CustomerService {
 
   async findByContact(phone: string, email: string | null = null) {
     try {
-      return CustomerModel.findByContact(phone, email);
+      return (CustomerModel as any).findByContact(phone, email);
     } catch (e) {
       console.error("Error in findByContact:", e);
       throw new DatabaseError("Error al buscar cliente por contacto.");
@@ -27,7 +27,7 @@ class CustomerService {
 
   async searchCustomers(searchTerm: string, limit = 10) {
     try {
-      return CustomerModel.searchCustomers(searchTerm, limit);
+      return (CustomerModel as any).searchCustomers(searchTerm, limit);
     } catch (e) {
       console.error("Error in searchCustomers:", e);
       throw new DatabaseError("Error al buscar clientes.");
@@ -47,7 +47,7 @@ class CustomerService {
         address,
       } = customerData;
 
-      let customer = await CustomerModel.findByIdentifier(identifier);
+      let customer = await (CustomerModel as any).findByIdentifier(identifier);
 
       if (customer) {
         // update
@@ -64,7 +64,7 @@ class CustomerService {
 
         if (address?.street && address?.city) {
           const exists = customer.addresses.find(
-            (a) => a.street === address.street && a.city === address.city
+            (a: any) => a.street === address.street && a.city === address.city
           );
           if (!exists) {
             await customer.addAddress({
@@ -167,10 +167,9 @@ class CustomerService {
 
       const skip = (page - 1) * limit;
 
-      const [items, total] = await Promise.all([
-        CustomerModel.find(query).sort(sort).skip(skip).limit(limit),
-        CustomerModel.countDocuments(query),
-      ]);
+      // Ejecutar consultas por separado para evitar problemas de tipos complejos
+      const items = await CustomerModel.find(query).sort(sort).skip(skip).limit(limit);
+      const total = await CustomerModel.countDocuments(query);
 
       return {
         data: items,
@@ -192,7 +191,7 @@ class CustomerService {
   async updatePurchaseStats(customerId: string, orderTotal: number) {
     try {
       const customer = await CustomerModel.findById(customerId);
-      if (customer) await customer.updatePurchaseStats(orderTotal);
+      if (customer) await (customer as any).updatePurchaseStats(orderTotal);
       return customer ?? null;
     } catch (e) {
       console.error("Error in updatePurchaseStats:", e);

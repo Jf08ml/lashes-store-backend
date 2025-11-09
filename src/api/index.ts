@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import serverless from "serverless-http";
-import app from "../src/app";
-import { connectDB } from "../src/config/db";
+import app from "../app";
+import { connectDB } from "../config/db";
 
 let bootstrapped = false;
 

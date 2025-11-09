@@ -30,7 +30,7 @@ export async function connectDB(): Promise<void> {
       attempts++;
       console.error(
         `❌ Error al conectar con MongoDB (intento ${attempts}/${MAX_RETRIES}):`,
-        error.message
+        (error as Error).message
       );
 
       if (attempts < MAX_RETRIES) {

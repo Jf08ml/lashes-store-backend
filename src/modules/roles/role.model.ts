@@ -27,5 +27,5 @@ export type RoleDoc = {
   updatedAt: Date;
 };
 
-export const RoleModel = model<RoleDoc>("Role", RoleSchema);
+export const RoleModel = model("Role", RoleSchema);
 export default RoleModel;

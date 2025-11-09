@@ -107,7 +107,7 @@ export interface IOnlineOrderModel extends Model<IOnlineOrder> {
   findByStatus(status: OnlineOrderStatus): Promise<IOnlineOrder[]>;
 }
 
-const OnlineOrderItemSchema = new Schema<IOnlineOrderItem>(
+const OnlineOrderItemSchema = new Schema(
   {
     product: { type: Schema.Types.ObjectId, ref: "Product", required: true },
     name: { type: String, required: true },
@@ -125,7 +125,7 @@ const OnlineOrderItemSchema = new Schema<IOnlineOrderItem>(
   { _id: false }
 );
 
-const OnlineCustomerSchema = new Schema<IOnlineCustomer>(
+const OnlineCustomerSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, trim: true, lowercase: true },
@@ -138,7 +138,7 @@ const OnlineCustomerSchema = new Schema<IOnlineCustomer>(
   { _id: false }
 );
 
-const OnlineOrderSchema = new Schema<IOnlineOrder>(
+const OnlineOrderSchema = new Schema(
   {
     _id: { type: Schema.Types.ObjectId, default: () => new Types.ObjectId() },
 
@@ -258,7 +258,7 @@ OnlineOrderSchema.statics.findByStatus = function (status: OnlineOrderStatus) {
     .sort({ createdAt: -1 });
 };
 
-export const OnlineOrderModel = model<IOnlineOrder, IOnlineOrderModel>(
+export const OnlineOrderModel = model(
   "OnlineOrder",
   OnlineOrderSchema
 );

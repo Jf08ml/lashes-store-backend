@@ -322,10 +322,9 @@ class OrderService {
       q = q.sort(sort);
 
       const skip = (page - 1) * limit;
-      const [items, total] = await Promise.all([
-        q.skip(skip).limit(limit).exec(),
-        OrderModel.countDocuments(filters),
-      ]);
+      // Ejecutar consultas por separado para evitar problemas de tipos complejos
+      const items = await q.skip(skip).limit(limit).exec();
+      const total = await OrderModel.countDocuments(filters);
       return {
         data: items,
         pagination: {
@@ -411,7 +410,7 @@ class OrderService {
           );
 
         // restaurar stock
-        await this.restoreStock(order.items as any[], session);
+        await this.restoreStock((order as any).items as any[], session);
 
         // marcar cancelada
         order.status = "cancelled";
@@ -566,7 +565,7 @@ class OrderService {
 
         // Restaurar stock si es necesario
         if (returnData.restoreStock !== false) {
-          await this.restoreStockFromOrder(order.items, session);
+          await this.restoreStockFromOrder((order as any).items, session);
         }
 
         // Validar y convertir processedBy a ObjectId válido o null
