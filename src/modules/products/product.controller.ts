@@ -107,6 +107,7 @@ export async function getProductsCatalog(
   next: NextFunction
 ) {
   try {
+    console.log("🛍️ Obteniendo productos del catálogo...");
     const {
       category,
       search,
@@ -117,6 +118,17 @@ export async function getProductsCatalog(
       page = "1",
       limit = "20",
     } = req.query as Record<string, string>;
+
+    console.log("📝 Parámetros de consulta:", {
+      category,
+      search,
+      minPrice,
+      maxPrice,
+      sortBy,
+      sortOrder,
+      page,
+      limit,
+    });
 
     const filters: any = { isActiveInCatalog: true, isActive: true };
     if (category) filters.category = category;
@@ -136,6 +148,8 @@ export async function getProductsCatalog(
       if (maxPrice) filters.salePrice.$lte = Number(maxPrice);
     }
 
+    console.log("🔍 Filtros aplicados:", filters);
+
     const options = {
       page: Number(page),
       limit: Number(limit),
@@ -146,8 +160,12 @@ export async function getProductsCatalog(
       populate: ["category"],
     };
 
+    console.log("⚙️ Opciones de consulta:", options);
+
     const productsCatalog = await ProductService.getProducts(filters, options);
     const data = (productsCatalog as any).data ?? productsCatalog;
+
+    console.log("✅ Productos encontrados:", Array.isArray(data) ? data.length : "No es array");
 
     sendResponse(
       res,
@@ -158,6 +176,7 @@ export async function getProductsCatalog(
         : "No se encontraron productos de catálogo."
     );
   } catch (error) {
+    console.error("❌ Error en getProductsCatalog:", error);
     next(error);
   }
 }

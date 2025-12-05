@@ -46,8 +46,47 @@ app.get("/", (_req: Request, res: Response) => {
   });
 });
 
+// Test endpoint para debugging (sin MongoDB)
+app.get("/api/test", (_req: Request, res: Response) => {
+  console.log("🧪 Test endpoint accessed");
+  res.json({
+    status: "success",
+    message: "Test endpoint funcionando SIN MongoDB",
+    timestamp: new Date().toISOString(),
+    mongodb_uri_exists: !!process.env.MONGODB_URI,
+    jwt_secret_exists: !!process.env.JWT_SECRET,
+    node_env: process.env.NODE_ENV,
+    vercel_env: process.env.VERCEL_ENV,
+    vercel_region: process.env.VERCEL_REGION,
+  });
+});
+
+// Test con MongoDB
+app.get("/api/test-db", async (_req: Request, res: Response) => {
+  try {
+    console.log("🧪 Test DB endpoint accessed");
+    const { connectDB } = await import("./config/db");
+    await connectDB();
+    res.json({
+      status: "success",
+      message: "Test DB endpoint funcionando CON MongoDB",
+      timestamp: new Date().toISOString(),
+      mongodb_status: "connected"
+    });
+  } catch (error) {
+    console.error("❌ Error en test-db:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Error conectando a MongoDB",
+      error: (error as Error).message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
 // Health check endpoint para Vercel
 app.get("/api/health", (_req: Request, res: Response) => {
+  console.log("🏥 Health endpoint accessed");
   res.json({ 
     status: "healthy", 
     timestamp: new Date().toISOString(),

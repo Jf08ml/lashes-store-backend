@@ -2,15 +2,16 @@ import mongoose from "mongoose";
 import "dotenv/config";
 
 const DB_URI = process.env.MONGODB_URI || process.env.DB_URI || process.env.MONGO_URI;
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 2000; // ms = 2 segundos (más rápido para serverless)
+const MAX_RETRIES = 2; // Reducir reintentos para serverless
+const RETRY_DELAY = 1000; // 1 segundo más rápido
 
-// Configuración optimizada para serverless
+// Configuración ultra optimizada para serverless
 const mongooseOptions = {
-  maxPoolSize: 10, // Mantener hasta 10 conexiones de socket
-  serverSelectionTimeoutMS: 5000, // Mantener intentando seleccionar un servidor por 5 segundos
-  socketTimeoutMS: 45000, // Cerrar sockets después de 45 segundos de inactividad
-  // Removiendo bufferCommands y bufferMaxEntries que pueden causar problemas
+  maxPoolSize: 5, // Reducir pool para serverless
+  serverSelectionTimeoutMS: 3000, // Timeout muy agresivo para serverless
+  socketTimeoutMS: 15000, // Socket timeout más corto
+  connectTimeoutMS: 5000, // Timeout de conexión corto
+  maxIdleTimeMS: 30000, // Cerrar conexiones idle más rápido
 };
 
 export async function connectDB(): Promise<void> {

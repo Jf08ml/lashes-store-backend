@@ -15,6 +15,18 @@ import {
 
 const router = Router();
 
+// Endpoint de prueba
+router.get("/test", (req, res) => {
+  res.json({
+    status: "success",
+    message: "Endpoint de productos funcionando",
+    timestamp: new Date().toISOString(),
+    method: req.method,
+    url: req.url,
+    headers: req.headers,
+  });
+});
+
 // públicas
 router.get("/productsCatalog", getProductsCatalog);
 router.get("/productDetail/:id", getProduct);
