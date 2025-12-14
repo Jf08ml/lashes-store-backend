@@ -19,6 +19,7 @@ class OnlineOrderService {
   // ====== CREATE ONLINE ORDER ======
   async createOnlineOrder(data: any) {
     const session = await OnlineOrderModel.startSession();
+    
     try {
       return await session.withTransaction(async () => {
         const transformed = await this.transformOnlineOrderData(data);
@@ -34,16 +35,16 @@ class OnlineOrderService {
           paymentStatus: "pending",
         }).save({ session });
 
-        const order = await OnlineOrderModel.findById(saved._id).populate(
-          "items.product"
-        );
+        const order = await OnlineOrderModel.findById(saved._id)
+          .session(session)
+          .populate("items.product");
 
         // Si hay error enviando email, log warning pero no fallar la orden
         if (order && transformed.customer.email) {
           try {
             await this.sendOrderConfirmationEmail(order);
           } catch (emailError: any) {
-            // Email error - no afecta el pedido
+            console.error('Error al enviar email de confirmación:', emailError.message);
           }
         }
 
@@ -327,6 +328,7 @@ class OnlineOrderService {
       sku: it.sku || "",
       quantity: it.quantity,
       price: it.price,
+      regularPrice: it.regularPrice || it.price,
       image: it.image || "",
       selectedVariant: it.selectedVariant || undefined,
     }));
@@ -359,18 +361,30 @@ class OnlineOrderService {
         email: order.customer.email,
         phone: order.customer.phone,
         address: {
-          street: order.customer.address.street,
-          city: order.customer.address.city,
-          state: order.customer.address.state,
+          street: order.customer.address,
+          city: order.customer.city,
+          state: order.customer.state,
         },
       },
-      items: order.items.map((item: any) => ({
-        name: item.name,
-        image: item.productSnapshot?.image,
-        quantity: item.quantity,
-        totalPrice: item.totalPrice,
-        selectedVariant: item.selectedVariant,
-      })),
+      items: order.items.map((item: any) => {
+        const unitPrice = item.price;
+        const regularPrice = item.regularPrice || item.price;
+        const hasDiscount = regularPrice > unitPrice;
+        
+        return {
+          name: item.name,
+          image: item.image || item.productSnapshot?.image,
+          quantity: item.quantity,
+          unitPrice: unitPrice,
+          regularPrice: regularPrice,
+          hasDiscount: hasDiscount,
+          totalPrice: unitPrice * item.quantity,
+          selectedVariant: item.selectedVariant,
+        };
+      }),
+      subtotal: order.subtotal,
+      discountAmount: order.discountAmount || 0,
+      shippingCost: order.shippingCost || 0,
       total: order.total,
       deliveryType: order.deliveryType,
     };

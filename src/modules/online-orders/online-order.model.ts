@@ -15,6 +15,7 @@ export type OnlineOrderStatus =
 export type OnlineDeliveryType =
   | "Entrega normal (1 día habil sin costo)"
   | "Entrega express (2-4 horas)"
+  | "Entrega inmediata ( 10 a 30 mins, costo según domicilio)"
   | "Recoger en tienda";
 
 // Métodos de pago específicos para pedidos online
@@ -38,7 +39,8 @@ export interface IOnlineOrderItem {
   name: string;
   sku?: string;
   quantity: number;
-  price: number; // Precio unitario
+  price: number; // Precio unitario (con descuento aplicado)
+  regularPrice?: number; // Precio regular sin descuento
   image?: string;
   selectedVariant?: ISelectedVariant;
 }
@@ -114,6 +116,7 @@ const OnlineOrderItemSchema = new Schema(
     sku: { type: String, default: "" },
     quantity: { type: Number, required: true, min: 1 },
     price: { type: Number, required: true, min: 0 },
+    regularPrice: { type: Number, default: 0, min: 0 },
     image: { type: String, default: "" },
     selectedVariant: {
       referenceName: { type: String, default: "" },
@@ -175,6 +178,7 @@ const OnlineOrderSchema = new Schema(
       enum: [
         "Entrega normal (1 día habil sin costo)",
         "Entrega express (2-4 horas)",
+        "Entrega inmediata ( 10 a 30 mins, costo según domicilio)",
         "Recoger en tienda",
       ],
       required: true,

@@ -84,7 +84,7 @@ const handler = async (req: VercelRequest, res: VercelResponse) => {
       // Wrapper para send si existe
       if (originalSend) {
         (res as any).send = function(...args: any[]) {
-          const result = originalSend(...args);
+          const result = (originalSend as any).apply(this, args);
           const duration = Date.now() - startTime;
           console.log(`📤 Response sent (send) - Status: ${res.statusCode} - Duration: ${duration}ms`);
           resolve();

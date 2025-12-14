@@ -6,6 +6,7 @@ class OnlineOrderController {
   async createOnlineOrder(req: Request, res: Response) {
     try {
       const order = await onlineOrderService.createOnlineOrder(req.body);
+      
       response(res, {
         status: 201,
         success: true,
@@ -13,7 +14,7 @@ class OnlineOrderController {
         data: order,
       });
     } catch (error: any) {
-      console.error("Error in createOnlineOrder:", error);
+      console.error("❌ Controller: Error in createOnlineOrder:", error);
       response(res, {
         status: error?.statusCode || 500,
         success: false,
