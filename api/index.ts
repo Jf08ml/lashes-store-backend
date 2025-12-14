@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import serverless from "serverless-http";
 import app from "../src/app";
 import { connectDB } from "../src/config/db";
 
@@ -28,9 +27,6 @@ async function ensureDbConnection() {
   }
 }
 
-// Crear el handler serverless
-const serverlessHandler = serverless(app);
-
 const handler = async (req: VercelRequest, res: VercelResponse) => {
   const startTime = Date.now();
   
@@ -41,7 +37,7 @@ const handler = async (req: VercelRequest, res: VercelResponse) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Max-Age', '86400'); // 24 horas
+    res.setHeader('Access-Control-Max-Age', '86400');
     
     // Preflight - responder inmediatamente
     if (req.method === 'OPTIONS') {
@@ -54,7 +50,6 @@ const handler = async (req: VercelRequest, res: VercelResponse) => {
     
     if (!skipDb) {
       try {
-        // Timeout de 5 segundos para la conexión (dejar margen para procesamiento)
         await Promise.race([
           ensureDbConnection(),
           new Promise((_, reject) => 
@@ -63,18 +58,59 @@ const handler = async (req: VercelRequest, res: VercelResponse) => {
         ]);
       } catch (dbError: any) {
         console.error(`⚠️ Error de BD después de ${Date.now() - startTime}ms:`, dbError?.message);
-        // Continuar sin DB para endpoints que no la requieran
       }
     } else {
       console.log(`⏭️ Skipping DB connection for ${req.url}`);
     }
     
-    // Procesar request
-    console.log(`⚙️ Processing with serverless handler...`);
-    await serverlessHandler(req, res);
+    // Convertir IncomingMessage a Express Request de forma compatible
+    console.log(`⚙️ Processing request with Express...`);
     
-    const duration = Date.now() - startTime;
-    console.log(`📤 Completado ${res.statusCode} en ${duration}ms`);
+    // Crear una Promise que se resuelve cuando Express termina de procesar
+    await new Promise<void>((resolve, reject) => {
+      // Marcar cuando la respuesta ha sido enviada
+      const originalEnd = res.end.bind(res);
+      const originalJson = res.json.bind(res);
+      const originalSend = res.send ? res.send.bind(res) : null;
+      
+      // Wrapper para end
+      res.end = function(...args: any[]) {
+        const result = originalEnd(...args);
+        const duration = Date.now() - startTime;
+        console.log(`📤 Response sent (end) - Status: ${res.statusCode} - Duration: ${duration}ms`);
+        resolve();
+        return result;
+      } as any;
+      
+      // Wrapper para json
+      res.json = function(body: any) {
+        const result = originalJson(body);
+        const duration = Date.now() - startTime;
+        console.log(`📤 Response sent (json) - Status: ${res.statusCode} - Duration: ${duration}ms`);
+        resolve();
+        return result;
+      } as any;
+      
+      // Wrapper para send si existe
+      if (originalSend) {
+        (res as any).send = function(...args: any[]) {
+          const result = originalSend(...args);
+          const duration = Date.now() - startTime;
+          console.log(`📤 Response sent (send) - Status: ${res.statusCode} - Duration: ${duration}ms`);
+          resolve();
+          return result;
+        };
+      }
+      
+      // Manejar el request con Express
+      app(req as any, res as any, (err: any) => {
+        if (err) {
+          console.error('❌ Express error:', err);
+          reject(err);
+        }
+      });
+    });
+    
   } catch (error: any) {
     const duration = Date.now() - startTime;
     console.error(`❌ Error handler después de ${duration}ms:`, error?.message || error);
