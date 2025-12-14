@@ -32,16 +32,20 @@ async function ensureDbConnection() {
 const serverlessHandler = serverless(app);
 
 const handler = async (req: VercelRequest, res: VercelResponse) => {
+  const startTime = Date.now();
+  
   try {
-    console.log(`📥 ${req.method} ${req.url}`);
+    console.log(`📥 ${req.method} ${req.url} - Start`);
     
-    // CORS headers
+    // CORS headers - configurar ANTES de cualquier respuesta
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Max-Age', '86400'); // 24 horas
     
-    // Preflight
+    // Preflight - responder inmediatamente
     if (req.method === 'OPTIONS') {
+      console.log(`✅ OPTIONS request handled in ${Date.now() - startTime}ms`);
       return res.status(200).end();
     }
 
@@ -58,23 +62,30 @@ const handler = async (req: VercelRequest, res: VercelResponse) => {
           )
         ]);
       } catch (dbError: any) {
-        console.error(`⚠️ Error de BD, continuando:`, dbError?.message);
-        // Continuar para que Express maneje el error
+        console.error(`⚠️ Error de BD después de ${Date.now() - startTime}ms:`, dbError?.message);
+        // Continuar sin DB para endpoints que no la requieran
       }
+    } else {
+      console.log(`⏭️ Skipping DB connection for ${req.url}`);
     }
     
     // Procesar request
+    console.log(`⚙️ Processing with serverless handler...`);
     await serverlessHandler(req, res);
     
-    console.log(`📤 Completado ${res.statusCode}`);
+    const duration = Date.now() - startTime;
+    console.log(`📤 Completado ${res.statusCode} en ${duration}ms`);
   } catch (error: any) {
-    console.error(`❌ Error handler:`, error?.message || error);
+    const duration = Date.now() - startTime;
+    console.error(`❌ Error handler después de ${duration}ms:`, error?.message || error);
+    console.error('Stack:', error?.stack);
     
     if (!res.headersSent) {
       res.status(500).json({ 
         result: "error", 
         message: "Error interno del servidor",
-        details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+        details: process.env.NODE_ENV === 'development' ? error?.message : undefined,
+        duration: `${duration}ms`
       });
     }
   }
