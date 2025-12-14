@@ -54,11 +54,11 @@ const handler = async (req: VercelRequest, res: VercelResponse) => {
     
     if (!skipDb) {
       try {
-        // Timeout de 8 segundos para la conexión
+        // Timeout de 5 segundos para la conexión (dejar margen para procesamiento)
         await Promise.race([
           ensureDbConnection(),
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('MongoDB connection timeout')), 8000)
+            setTimeout(() => reject(new Error('MongoDB connection timeout')), 5000)
           )
         ]);
       } catch (dbError: any) {

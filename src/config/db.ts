@@ -5,12 +5,12 @@ const DB_URI = process.env.MONGODB_URI || process.env.DB_URI || process.env.MONG
 const MAX_RETRIES = 2; // Reducir reintentos para serverless
 const RETRY_DELAY = 1000; // 1 segundo más rápido
 
-// Configuración ultra optimizada para Vercel serverless
+// Configuración ultra optimizada para Vercel serverless (10s límite)
 const mongooseOptions = {
   maxPoolSize: 3, // Pool pequeño para serverless
-  serverSelectionTimeoutMS: 4000, // 4 segundos máximo
-  socketTimeoutMS: 10000, // 10 segundos
-  connectTimeoutMS: 4000, // 4 segundos para conectar
+  serverSelectionTimeoutMS: 3000, // 3 segundos máximo
+  socketTimeoutMS: 8000, // 8 segundos
+  connectTimeoutMS: 3000, // 3 segundos para conectar
   maxIdleTimeMS: 20000, // Cerrar conexiones idle rápido
 };
 
