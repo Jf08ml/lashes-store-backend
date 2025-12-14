@@ -33,17 +33,7 @@ const handler = async (req: VercelRequest, res: VercelResponse) => {
   try {
     console.log(`📥 ${req.method} ${req.url} - Start`);
     
-    // CORS headers - configurar ANTES de cualquier respuesta
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Max-Age', '86400');
-    
-    // Preflight - responder inmediatamente
-    if (req.method === 'OPTIONS') {
-      console.log(`✅ OPTIONS request handled in ${Date.now() - startTime}ms`);
-      return res.status(200).end();
-    }
+    // Express maneja CORS, no configurar headers aquí para evitar conflictos
 
     // Conectar a MongoDB solo si es necesario
     const skipDb = req.url === '/' || req.url === '/api/test' || req.url === '/api/health';

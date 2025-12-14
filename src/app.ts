@@ -13,15 +13,15 @@ import financialRoutes from "./routes/financial.routes";
 
 const app = express();
 
-// Si quieres lista blanca, descomenta y ajusta
-// const allowedOrigins = ["http://localhost:9000", "https://www.zybizobazar.com"];
-// const corsOptions: cors.CorsOptions = {
-//   origin(origin, cb) {
-//     if (!origin || allowedOrigins.includes(origin)) cb(null, true);
-//     else cb(new Error("Origen no permitido por CORS"));
-//   },
-// };
-app.use(cors({ origin: "*" }));
+// Configuración de CORS
+const corsOptions: cors.CorsOptions = {
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false,
+  maxAge: 86400
+};
+app.use(cors(corsOptions));
 
 app.use(morgan("dev"));
 app.use(express.json());
