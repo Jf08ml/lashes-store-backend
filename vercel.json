@@ -1,6 +1,11 @@
 {
   "version": 2,
-  "routes": [
-    { "src": "/(.*)", "dest": "/api/index.ts" }
+  "builds": [{ "src": "src/app.js", "use": "@vercel/node" }],
+  "routes": [{ "src": "/api/(.*)", "dest": "/src/app.js" }],
+  "crons": [
+    {
+      "path": "/api/cron/check-memberships",
+      "schedule": "0 14 * * *"
+    }
   ]
 }

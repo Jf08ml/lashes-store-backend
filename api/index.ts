@@ -6,62 +6,75 @@ import { connectDB } from "../src/config/db";
 let isConnected = false;
 
 async function ensureDbConnection() {
-  if (!isConnected) {
-    try {
-      console.log("🔗 Conectando a MongoDB...");
-      await connectDB();
-      isConnected = true;
-      console.log("✅ MongoDB conectado exitosamente");
-    } catch (error) {
-      console.error("❌ Error conectando a MongoDB:", error);
-      throw error;
-    }
+  if (isConnected) {
+    console.log("♻️ Reutilizando conexión existente");
+    return;
+  }
+
+  const startTime = Date.now();
+  try {
+    console.log("🔗 Iniciando conexión a MongoDB...");
+    console.log("📍 MONGODB_URI exists:", !!process.env.MONGODB_URI);
+    
+    await connectDB();
+    
+    isConnected = true;
+    const duration = Date.now() - startTime;
+    console.log(`✅ MongoDB conectado en ${duration}ms`);
+  } catch (error: any) {
+    const duration = Date.now() - startTime;
+    console.error(`❌ Error MongoDB después de ${duration}ms:`, error?.message || error);
+    throw error;
   }
 }
 
-// Crear el handler serverless con configuración mejorada
-const serverlessHandler = serverless(app, {
-  binary: false, // Asegurar que no hay problemas con encoding
-});
+// Crear el handler serverless
+const serverlessHandler = serverless(app);
 
 const handler = async (req: VercelRequest, res: VercelResponse) => {
   try {
     console.log(`📥 ${req.method} ${req.url}`);
     
-    // Configurar headers CORS explícitamente
+    // CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     
-    // Manejar preflight requests
+    // Preflight
     if (req.method === 'OPTIONS') {
-      res.status(200).end();
-      return;
+      return res.status(200).end();
     }
 
-    // Solo conectar a MongoDB si no es un endpoint de test básico
-    if (!req.url?.includes('/api/test') || req.url?.includes('/api/test-db')) {
-      // Conectar a la base de datos con timeout
-      const dbPromise = ensureDbConnection();
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Database connection timeout')), 8000);
-      });
-      
-      await Promise.race([dbPromise, timeoutPromise]);
+    // Conectar a MongoDB solo si es necesario
+    const skipDb = req.url === '/' || req.url === '/api/test' || req.url === '/api/health';
+    
+    if (!skipDb) {
+      try {
+        // Timeout de 8 segundos para la conexión
+        await Promise.race([
+          ensureDbConnection(),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('MongoDB connection timeout')), 8000)
+          )
+        ]);
+      } catch (dbError: any) {
+        console.error(`⚠️ Error de BD, continuando:`, dbError?.message);
+        // Continuar para que Express maneje el error
+      }
     }
     
-    // Procesar la request
+    // Procesar request
     await serverlessHandler(req, res);
     
-    console.log(`📤 Response completed with status: ${res.statusCode}`);
-  } catch (error) {
-    console.error("❌ Error en handler:", error);
+    console.log(`📤 Completado ${res.statusCode}`);
+  } catch (error: any) {
+    console.error(`❌ Error handler:`, error?.message || error);
     
     if (!res.headersSent) {
       res.status(500).json({ 
         result: "error", 
         message: "Error interno del servidor",
-        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+        details: process.env.NODE_ENV === 'development' ? error?.message : undefined
       });
     }
   }
